@@ -1,0 +1,25 @@
+#spring.application.name=bridge
+
+spring:
+  application:
+    name: bridge
+  datasource:
+    url: jdbc:postgresql://localhost:15432/event_db
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: "SET TIME ZONE 'Asia/Seoul'"
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  sql:
+    init:
+      mode: never  # always, never, embedded
+publicdataapi:
+  serviceKey: ${PUBLICDATAAPI_SERVICEKEY}
