@@ -15,11 +15,13 @@ public class KafkaConsumerService {
     @Value("${spring.kafka.topic}")
     private String topic;
 
-    @Value("${spring.kafka.group-id}")
+    @Value("${spring.kafka.consumer.group-id}")
     private String groupId;
 
-    @KafkaListener(topics = "${spring.kafka.topic}", groupId = "${spring.kafka.group-id}")
+    @KafkaListener(topics = "${spring.kafka.topic}", groupId = "${spring.kafka.consumer.group-id}")
     public void consumeEvent(EventDto eventDto) {
+        log.info("topic: {}", topic);
+        log.info("groupId: {}", groupId);
         log.info("Consumed event: {}", eventDto);
     }
 

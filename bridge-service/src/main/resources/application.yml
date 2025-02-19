@@ -1,6 +1,8 @@
 spring:
+
   application:
     name: bridge-service
+
   kafka:
     bootstrap-servers: localhost:9092
     producer:
@@ -8,3 +10,38 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     properties:
       spring.json.add.type.headers: false
+    topic: event-topic
+
+  datasource:
+#    url: jdbc:postgresql://postgres-service:15432/${POSTGRES_DB}
+    url: jdbc:postgresql://localhost:15432/${POSTGRES_DB}
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+    hibernate:
+      ddl-auto: create
+
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
+
+server:
+  port: 8280
+
+public-data-api:
+  base-url: "http://apis.data.go.kr/B551011/KorService1"
+  endpoints:
+    area-based-list: "/areaBasedList1"
+    detail-common: "/detailCommon1"
+    detail-intro: "/detailIntro1"
+  service-key: ${SERVICE_KEY}
+  num-of-rows: 10
+

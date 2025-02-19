@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -14,7 +15,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Setter
 @Getter
-public class EventDto {
+public class EventDto implements Serializable {
+
+    private static final long serialVersionUID = 1L;  // 🚀 직렬화 ID 추가
 
     // 지역기반관광정보조회
     @JsonProperty("contentid")
