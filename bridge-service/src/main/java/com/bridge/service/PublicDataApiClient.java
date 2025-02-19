@@ -21,6 +21,10 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -28,108 +32,150 @@ import java.util.List;
 @Slf4j
 public class PublicDataApiClient {
 
+    private final RestClient restClient;
+
     private final ObjectMapper objectMapper;
 
-    private final KafkaProducer kafkaProducer;
+    @Value("${public-data-api.base-url}")
+    private String baseUrl;
 
-    @Value("${publicdataapi.serviceKey}")
+    @Value("${public-data-api.endpoints.area-based-list}")
+    private String areaBasedListEndpoint;
+
+    @Value("${public-data-api.endpoints.detail-common}")
+    private String detailCommonEndpoint;
+
+    @Value("${public-data-api.endpoints.detail-intro}")
+    private String detailIntroEndpoint;
+
+    @Value("${public-data-api.service-key}")
     private String serviceKey;
 
-    /**
-     * 지역기반관광정보조회
-     */
-    public void getEventList() {
-        RestClient defaultClient = RestClient.create();
+    @Value("${public-data-api.num-of-rows}")
+    private Integer numOfRows;
+
+    public List<EventDto> getEventDtoList() {
         int pageNo = 1;
+        List<EventDto> eventDtoList = new ArrayList<>();
+        while (setAreaBasedList(pageNo, eventDtoList)) {
+            pageNo++;
+        }
+        return eventDtoList;
+    }
 
-        while (true) {
-            URI uri = UriComponentsBuilder.fromUriString("http://apis.data.go.kr/B551011/KorService1/areaBasedList1")  // 지역기반관광정보조회
-                    .queryParam("serviceKey", serviceKey)  // 공공데이터포털에서 발급받은인증키
-                    .queryParam("MobileApp", "event")  // 서비스명
-                    .queryParam("MobileOS", "ETC")  // OS 구분(IOS, AND, ETC)
-                    .queryParam("_type", "json")  // 응답메세지 형식(XML, JSON)
-                    .queryParam("listYN", "Y")  // 목록 구분(Y=목록, N=개수)
-                    .queryParam("arrange", "Q")  // (A=제목순, C=수정일순, D=생성일순) 대표이미지가 존재하는 정렬(O=제목순, Q=수정일순, R=생성일순)
-                    .queryParam("contentTypeId", "15")  // 콘텐츠 타입(15=행사/공연/축제)
-                    .queryParam("numOfRows", "10")  // 페이지당 데이터 수
-                    .queryParam("pageNo", pageNo)  // 현재 페이지 번호
-                    .queryParam("modifiedtime", "20250207")  // 수정일
-                    .build(true)
-                    .toUri();
+    /**
+     * 지역기반관광정보조회 API 호출해서 세팅
+      * @return
+     */
+    public boolean setAreaBasedList(int pageNo, List<EventDto> eventDtoList) {
+        String apiName = "AreaBasedList";
+        URI uri = buildAreaBasedListUri(pageNo);
+        String result = fetchApiResponse(uri, apiName);
+        log.info("page number = {}", pageNo);
+        if (isJson(result)) {
+            log.info("AreaBasedList Parsing JSON");
+            JsonNode rootJsonNode  = stringToJsonNode(apiName, result);
+            JsonNode bodyJsonNode = rootJsonNode.path("response").path("body");
+            JsonNode numOfRowsNode = bodyJsonNode.path("numOfRows");
+            int currentTotalCount = bodyJsonNode.path("totalCount").asInt();
+            int currentNumOfRows = numOfRowsNode.asInt();
 
-            String result = defaultClient.get().uri(uri).retrieve().body(String.class);
-            log.info("AreaBasedList result: {}", result);
-            log.info("AreaBasedList page number = {}", pageNo);
-
-            if (result != null && result.trim().startsWith("{")) {
-                log.info("AreaBasedList Parsing JSON");
-                JsonNode rootJsonNode = null;
-                try {
-                    rootJsonNode = objectMapper.readTree(result);
-                } catch (JsonProcessingException e) {
-                    log.error("Error parsing the AreaBasedList result in JSON: {}", e.getMessage());
-                    throw new RuntimeException(e);
-                }
-
-                JsonNode bodyJsonNode = rootJsonNode.path("response").path("body");
-                JsonNode numOfRowsNode = bodyJsonNode.path("numOfRows");
-                    if (numOfRowsNode.asInt(1) == 0) {
-                        log.info("No more AreaBasedList");
-                        break;
-                    }
-
-                EventListHttpResponse eventListHttpResponse = null;
-                try {
-                    eventListHttpResponse = objectMapper.treeToValue(rootJsonNode, EventListHttpResponse.class);
-                } catch (JsonProcessingException e) {
-                    log.error("Error parsing the AreaBasedList rootNode in JSON: {}", e.getMessage());
-                    throw new RuntimeException(e);
-                }
-
-                List<EventListItem> eventListItemList = eventListHttpResponse.getResponse().getBody().getItems().getEventListItemList();
-                eventListItemList.forEach(eventListItem -> {
-                    EventDto eventDto = new EventDto();
-                    String contentId = String.valueOf(eventListItem.getContentId());
-                    eventDto = areaBasedListToEventDto(eventListItem, eventDto);
-                    eventDto = getDetailCommon(contentId, eventDto);
-                    eventDto = getDetailIntro(contentId, eventDto);
-                    log.info("EventDto: {}", eventDto);
-                    kafkaProducer.sendEventDto(eventDto);
-                });
-
-                pageNo++;
-            } else if (result != null && result.trim().startsWith("<")) {
-                log.info("AreaBasedList Parsing XML");
-                XmlMapper xmlMapper = new XmlMapper();
-                OpenApiServiceResponse openApiServiceResponse = null;
-                try {
-                    openApiServiceResponse = xmlMapper.readValue(result, OpenApiServiceResponse.class);
-                } catch (JsonProcessingException e) {
-                    log.error("Error parsing the AreaBasedList result in XML: {}", e.getMessage());
-                    throw new RuntimeException(e);
-                }
-
-                CmmMsgHeader cmmMsgHeader = openApiServiceResponse.getCmmMsgHeader();
-                log.error(
-                        "AreaBasedList Error HTTP Response: errMsg = {}, returnAuthMsg = {}, returnReasonCode = {}",
-                        cmmMsgHeader.getErrMsg(), cmmMsgHeader.getReturnAuthMsg(), cmmMsgHeader.getReturnReasonCode()
-                );
-
-                break;
-            } else {
-                log.error("Unexpected AreaBasedList response format.");
-                break;
+            if (currentNumOfRows == 0) {
+                log.info("No more AreaBasedList");
+                return false;
             }
+
+            EventListHttpResponse eventListHttpResponse = parseJsonNode(rootJsonNode, EventListHttpResponse.class);
+            List<EventListItem> eventListItemList = eventListHttpResponse.getResponse().getBody().getItems().getEventListItemList();
+            eventListItemList.forEach(eventListItem -> {
+                EventDto eventDto = new EventDto();
+                areaBasedListToEventDto(eventDto, eventListItem);
+                eventDtoList.add(eventDto);
+            });
+
+            if (numOfRows > currentNumOfRows || currentNumOfRows * pageNo == currentTotalCount) {
+                log.info("No more AreaBasedList");
+                return false;
+            }
+        } else if (isXml(result)) {
+            handleErrorResponse("AreaBasedList", result);
+            return false;
+        } else {
+            log.error("Unexpected AreaBasedList response format.");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 공통정보조회 API 호출해서 세팅
+     * @param contentId
+     */
+    public void setDetailCommon(String contentId, EventDto eventDto) {
+        String apiName = "DetailCommon";
+        log.info("contentId = {}", contentId);
+        URI uri = buildDetailCommonUri(contentId);
+        String result = fetchApiResponse(uri, apiName);
+        if (isJson(result)) {
+            log.info("DetailCommon Parsing JSON");
+            JsonNode rootJsonNode  = stringToJsonNode(apiName, result);
+            DetailCommonHttpResponse detailCommonHttpResponse = parseJsonNode(rootJsonNode, DetailCommonHttpResponse.class);
+            DetailCommonItem detailCommonItem = detailCommonHttpResponse.getResponse().getBody().getItems().getDetailCommonItemList().getFirst();
+            detailCommonToEventDto(eventDto, detailCommonItem);
+        } else if (isXml(result)) {
+            handleErrorResponse("DetailCommon", result);
+        } else {
+            log.error("Unexpected DetailCommon response format.");
         }
     }
 
     /**
-     * 공통정보조회
+     * 소개정보조회 API 호출해서 세팅
      * @param contentId
      */
-    private EventDto getDetailCommon(String contentId, EventDto eventDto) {
-        RestClient defaultClient = RestClient.create();
-        URI uri = UriComponentsBuilder.fromUriString("http://apis.data.go.kr/B551011/KorService1/detailCommon1")
+    public void setDetailIntro(String contentId, EventDto eventDto) {
+        String apiName = "DetailIntro";
+        log.info("contentId = {}", contentId);
+        URI uri = buildDetailIntroUri(contentId);
+        String result = fetchApiResponse(uri, apiName);
+        if (isJson(result)) {
+            log.info("DetailIntro Parsing JSON");
+            JsonNode rootJsonNode = stringToJsonNode(apiName, result);
+            DetailIntroHttpResponse detailIntroHttpResponse = parseJsonNode(rootJsonNode, DetailIntroHttpResponse.class);
+            DetailIntroItem detailIntroItem = detailIntroHttpResponse.getResponse().getBody().getItems().getDetailIntroItemList().getFirst();
+            detailIntroToEventDto(eventDto, detailIntroItem);
+        } else if (isXml(result)) {
+            log.info("DetailIntro Parsing XML");
+            handleErrorResponse("DetailIntro", result);
+        } else {
+            log.error("Unexpected DetailIntro response format.");
+        }
+    }
+
+    private URI buildAreaBasedListUri(int pageNo) {
+        String yesterday = LocalDate.now(ZoneId.of("Asia/Seoul"))
+                    .minusDays(1)
+                    .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        URI uri = UriComponentsBuilder.fromUriString(baseUrl + areaBasedListEndpoint)  // 지역기반관광정보조회
+                .queryParam("serviceKey", serviceKey)  // 공공데이터포털에서 발급받은인증키
+                .queryParam("MobileApp", "event")  // 서비스명
+                .queryParam("MobileOS", "ETC")  // OS 구분(IOS, AND, ETC)
+                .queryParam("_type", "json")  // 응답메세지 형식(XML, JSON)
+                .queryParam("listYN", "Y")  // 목록 구분(Y=목록, N=개수)
+                .queryParam("arrange", "Q")  // (A=제목순, C=수정일순, D=생성일순) 대표이미지가 존재하는 정렬(O=제목순, Q=수정일순, R=생성일순)
+                .queryParam("contentTypeId", "15")  // 콘텐츠 타입(15=행사/공연/축제)
+                .queryParam("numOfRows", String.valueOf(numOfRows))  // 페이지당 데이터 수
+                .queryParam("pageNo", pageNo)  // 현재 페이지 번호
+                .queryParam("modifiedtime", yesterday)  // 수정일
+                .build(true)
+                .toUri();
+        log.info("AreaBasedList URI: {}", uri);
+        return uri;
+    }
+
+    private URI buildDetailCommonUri(String contentId) {
+        URI uri = UriComponentsBuilder.fromUriString(baseUrl + detailCommonEndpoint)
                 .queryParam("serviceKey", serviceKey)
                 .queryParam("MobileApp", "event")
                 .queryParam("MobileOS", "ETC")
@@ -145,62 +191,12 @@ public class PublicDataApiClient {
                 .queryParam("contentId", contentId)
                 .build(true)
                 .toUri();
-
-        String result = defaultClient.get().uri(uri).retrieve().body(String.class);
-        log.info("DetailCommon result for contentId {}: {}", contentId, result);
-
-        if (result != null && result.trim().startsWith("{")) {
-            log.info("DetailCommon Parsing JSON");
-            JsonNode rootJsonNode = null;
-            try {
-                rootJsonNode = objectMapper.readTree(result);
-            } catch (JsonProcessingException e) {
-                log.error("Error parsing the DetailCommon result in JSON: {}", e.getMessage());
-                throw new RuntimeException(e);
-            }
-
-            DetailCommonHttpResponse detailCommonHttpResponse = null;
-            try {
-                detailCommonHttpResponse = objectMapper.treeToValue(rootJsonNode, DetailCommonHttpResponse.class);
-            } catch (JsonProcessingException e) {
-                log.error("Error parsing the DetailCommon rootNode in JSON: {}", e.getMessage());
-                throw new RuntimeException(e);
-            }
-
-            List<DetailCommonItem> detailCommonItemList = detailCommonHttpResponse.getResponse().getBody().getItems().getDetailCommonItemList();
-            detailCommonItemList.forEach(detailCommonItem -> {
-                detailCommonToEventDto(eventDto, detailCommonItem);
-            });
-        } else if (result != null && result.trim().startsWith("<")) {
-            log.info("DetailCommon Parsing XML");
-            XmlMapper xmlMapper = new XmlMapper();
-            OpenApiServiceResponse openApiServiceResponse = null;
-            try {
-                openApiServiceResponse = xmlMapper.readValue(result, OpenApiServiceResponse.class);
-            } catch (JsonProcessingException e) {
-                log.error("Error parsing the DetailCommon result in XML: {}", e.getMessage());
-                throw new RuntimeException(e);
-            }
-
-            CmmMsgHeader cmmMsgHeader = openApiServiceResponse.getCmmMsgHeader();
-            log.error(
-                    "DetailCommon Error HTTP Response: errMsg = {}, returnAuthMsg = {}, returnReasonCode = {}",
-                    cmmMsgHeader.getErrMsg(), cmmMsgHeader.getReturnAuthMsg(), cmmMsgHeader.getReturnReasonCode()
-            );
-        } else {
-            log.error("Unexpected DetailCommon response format.");
-        }
-
-        return eventDto;
+        log.info("DetailCommon URI: {}", uri);
+        return uri;
     }
 
-    /**
-     * 소개정보조회
-     * @param contentId
-     */
-    private EventDto getDetailIntro(String contentId, EventDto eventDto) {
-        RestClient defaultClient = RestClient.create();
-        URI uri = UriComponentsBuilder.fromUriString("http://apis.data.go.kr/B551011/KorService1/detailIntro1")
+    private URI buildDetailIntroUri(String contentId) {
+        URI uri = UriComponentsBuilder.fromUriString(baseUrl + detailIntroEndpoint)
                 .queryParam("serviceKey", serviceKey)
                 .queryParam("MobileApp", "event")
                 .queryParam("MobileOS", "ETC")
@@ -209,56 +205,30 @@ public class PublicDataApiClient {
                 .queryParam("contentId", contentId)
                 .build(true)
                 .toUri();
-
-        String result = defaultClient.get().uri(uri).retrieve().body(String.class);
-        log.info("DetailIntro result for contentId {}: {}", contentId, result);
-
-        if (result != null && result.trim().startsWith("{")) {
-            log.info("DetailIntro Parsing JSON");
-            JsonNode rootJsonNode = null;
-            try {
-                rootJsonNode = objectMapper.readTree(result);
-            } catch (JsonProcessingException e) {
-                log.error("Error parsing the DetailIntro result in JSON: {}", e.getMessage());
-                throw new RuntimeException(e);
-            }
-
-            DetailIntroHttpResponse detailIntroHttpResponse = null;
-            try {
-                detailIntroHttpResponse = objectMapper.treeToValue(rootJsonNode, DetailIntroHttpResponse.class);
-            } catch (JsonProcessingException e) {
-                log.error("Error parsing the DetailIntro rootNode in JSON: {}", e.getMessage());
-                throw new RuntimeException(e);
-            }
-
-            List<DetailIntroItem> detailIntroItemList = detailIntroHttpResponse.getResponse().getBody().getItems().getDetailIntroItemList();
-            detailIntroItemList.forEach(detailIntroItem -> {
-                detailIntroToEventDto(eventDto, detailIntroItem);
-            });
-        } else if (result != null && result.trim().startsWith("<")) {
-            log.info("DetailIntro Parsing XML");
-            XmlMapper xmlMapper = new XmlMapper();
-            OpenApiServiceResponse openApiServiceResponse = null;
-            try {
-                openApiServiceResponse = xmlMapper.readValue(result, OpenApiServiceResponse.class);
-            } catch (JsonProcessingException e) {
-                log.error("Error parsing the DetailIntro result in XML: {}", e.getMessage());
-                throw new RuntimeException(e);
-            }
-
-            CmmMsgHeader cmmMsgHeader = openApiServiceResponse.getCmmMsgHeader();
-            log.error(
-                    "DetailIntro Error HTTP Response: errMsg = {}, returnAuthMsg = {}, returnReasonCode = {}",
-                    cmmMsgHeader.getErrMsg(), cmmMsgHeader.getReturnAuthMsg(), cmmMsgHeader.getReturnReasonCode()
-            );
-        } else {
-            log.error("Unexpected DetailIntro response format.");
-        }
-
-        return eventDto;
+        log.info("DetailIntro URI: {}", uri);
+        return uri;
     }
 
-    private EventDto areaBasedListToEventDto(EventListItem eventListItem, EventDto eventDto) {
+    private String fetchApiResponse(URI uri, String apiName) {
+        try {
+            String result = restClient.get().uri(uri).retrieve().body(String.class);
+            log.info("{} result: {}", apiName, result);
+            return result;
+        } catch (Exception e) {
+            log.error("Error calling {} API: {}", apiName, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    private boolean isJson(String result) {
+        return result.trim().startsWith("{");
+    }
+
+    private boolean isXml(String result) {
+        return result.trim().startsWith("<");
+    }
+
+    private void areaBasedListToEventDto(EventDto eventDto, EventListItem eventListItem) {
         eventDto.setContentId(eventListItem.getContentId());
         eventDto.setCreatedTime(eventListItem.getCreatedTime());
         eventDto.setModifiedTime(eventListItem.getModifiedTime());
@@ -271,16 +241,14 @@ public class PublicDataApiClient {
         eventDto.setMapY(eventListItem.getMapY());
         eventDto.setTitle(eventListItem.getTitle());
         eventDto.setZipCode(eventListItem.getZipCode());
-        return eventDto;
     }
 
-    private EventDto detailCommonToEventDto(EventDto eventDto, DetailCommonItem detailCommonItem) {
+    private void detailCommonToEventDto(EventDto eventDto, DetailCommonItem detailCommonItem) {
         eventDto.setHomepage(detailCommonItem.getHomepage());
         eventDto.setOverview(detailCommonItem.getOverview());
-        return eventDto;
     }
 
-    private EventDto detailIntroToEventDto(EventDto eventDto, DetailIntroItem detailIntroItem) {
+    private void detailIntroToEventDto(EventDto eventDto, DetailIntroItem detailIntroItem) {
         eventDto.setEventStartDate(detailIntroItem.getEventStartDate());
         eventDto.setEventEndDate(detailIntroItem.getEventEndDate());
         eventDto.setPlayTime(detailIntroItem.getPlayTime());
@@ -289,7 +257,41 @@ public class PublicDataApiClient {
         eventDto.setSponsor1Tel(detailIntroItem.getSponsor1Tel());
         eventDto.setSponsor2(detailIntroItem.getSponsor2());
         eventDto.setSponsor2Tel(detailIntroItem.getSponsor2Tel());
-        return eventDto;
+    }
+
+    private JsonNode stringToJsonNode(String apiName, String jsonString) {
+        try {
+            return objectMapper.readTree(jsonString);
+        } catch (JsonProcessingException e) {
+            log.error("Error parsing JSON response from {}: {}", apiName, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    private <T> T parseJsonNode(JsonNode jsonNode, Class<T> clazz) {
+        try {
+            return objectMapper.treeToValue(jsonNode, clazz);
+        } catch (JsonProcessingException e) {
+            log.error("Error parsing JSON to {}: {}", clazz.getSimpleName(), e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void handleErrorResponse(String apiName, String result) {
+        log.info("{} Parsing XML", apiName);
+        XmlMapper xmlMapper = new XmlMapper();
+        OpenApiServiceResponse openApiServiceResponse = null;
+        try {
+            openApiServiceResponse = xmlMapper.readValue(result, OpenApiServiceResponse.class);
+        } catch (JsonProcessingException e) {
+            log.error("Error parsing the {} result in XML: {}", apiName, e.getMessage());
+            throw new RuntimeException(e);
+        }
+        CmmMsgHeader cmmMsgHeader = openApiServiceResponse.getCmmMsgHeader();
+        log.error(
+                "{} Error HTTP Response: errMsg = {}, returnAuthMsg = {}, returnReasonCode = {}",
+                apiName, cmmMsgHeader.getErrMsg(), cmmMsgHeader.getReturnAuthMsg(), cmmMsgHeader.getReturnReasonCode()
+        );
     }
 
 }

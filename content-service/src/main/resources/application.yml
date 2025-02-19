@@ -4,14 +4,15 @@ spring:
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
-      group-id: event-consumer-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "com.content.model.dto"
         spring.json.value.default.type: "com.content.model.dto.EventDto"
-    topic: eventdto-topic
-    group-id: event-consumer-group
+        reconnect.backoff.ms: 1000
+        reconnect.backoff.max.ms: 50000
+      group-id: event-consumer-group
+    topic: event-topic
 
 server:
   port: 8180

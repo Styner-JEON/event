@@ -14,11 +14,11 @@ public class KafkaProducer {
 
     private final KafkaTemplate<String, EventDto> kafkaTemplate;
 
-//    @Value("${kafka.topic.event}")
-//    private String topic;
+    @Value("${spring.kafka.topic}")
+    private String topic;
 
     public void sendEventDto(EventDto eventDto) {
-        kafkaTemplate.send("eventdto-topic", eventDto);
+        kafkaTemplate.send(topic, eventDto);
     }
 
 }

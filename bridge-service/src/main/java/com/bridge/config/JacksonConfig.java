@@ -1,11 +1,14 @@
 package com.bridge.config;
 
+import com.bridge.deserializer.LocalDateDeserializer;
+import com.bridge.deserializer.LocalDateTimeDeserializer;
+import com.bridge.serializer.LocalDateSerializer;
+import com.bridge.serializer.LocalDateTimeSerializer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,7 +25,7 @@ public class JacksonConfig {
     public ObjectMapper objectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
 
-        // Java 8 날짜 & 시간 모듈 추가
+        // 날짜 & 시간 모듈 추가
         objectMapper.registerModule(new JavaTimeModule());
 
         SimpleModule module = new SimpleModule();
