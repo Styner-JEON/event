@@ -1,11 +1,13 @@
 package com.content.controller;
 
+import com.content.exception.ContentServiceException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.ZoneId;
@@ -27,8 +29,11 @@ public class HealthCheckController {
     @Setter
     @Getter
     public static class HealthStatus {
+
         private String status;
+
         private String koreanDateTime;
+
     }
 
 }

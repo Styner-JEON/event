@@ -24,20 +24,13 @@ public class JacksonConfig {
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
-
-        // 날짜 & 시간 모듈 추가
         objectMapper.registerModule(new JavaTimeModule());
 
         SimpleModule module = new SimpleModule();
-
-        // LocalDate 직렬화 & 역직렬화 설정
         module.addSerializer(LocalDate.class, new LocalDateSerializer());
         module.addDeserializer(LocalDate.class,new LocalDateDeserializer());
-
-        // LocalDateTime 직렬화 & 역직렬화 설정
         module.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
         module.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer());
-
         objectMapper.registerModule(module);
 
         // Timestamp가 아닌 문자열 포맷 유지

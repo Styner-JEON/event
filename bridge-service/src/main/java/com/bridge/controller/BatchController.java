@@ -1,5 +1,6 @@
 package com.bridge.controller;
 
+import com.bridge.exception.KafkaSendingException;
 import com.bridge.model.dto.EventDto;
 import com.bridge.service.PublicDataApiClient;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,10 @@ public class BatchController {
 
     private final PublicDataApiClient publicDataApiClient;
 
+    /**
+     * 테스트를 위한 것
+     * @return List of EventDto
+     */
     @GetMapping("/batch")
     public ResponseEntity<List<EventDto>> setEventDtoList() {
         List<EventDto> eventDtoList = publicDataApiClient.getEventDtoList();

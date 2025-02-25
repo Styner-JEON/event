@@ -37,10 +37,10 @@ public class BatchConfig {
     public Step areaBasedListFetchingStep(
             JobRepository jobRepository,
             PlatformTransactionManager transactionManager,
-            AreaBasedListFetchingTasklet areaBasedListFetchingTasklet
+            AreaBasedListFetchingTasklet tasklet
     ) {
         return new StepBuilder("areaBasedListFetchingStep", jobRepository)
-                .tasklet(areaBasedListFetchingTasklet, transactionManager)
+                .tasklet(tasklet, transactionManager)
                 .build();
     }
 
@@ -48,10 +48,10 @@ public class BatchConfig {
     public Step detailFetchingStep(
             JobRepository jobRepository,
             PlatformTransactionManager transactionManager,
-            DetailFetchingTasklet detailFetchingTasklet
+            DetailFetchingTasklet tasklet
     ) {
         return new StepBuilder("detailFetchingStep", jobRepository)
-                .tasklet(detailFetchingTasklet, transactionManager)
+                .tasklet(tasklet, transactionManager)
                 .build();
     }
 
@@ -59,10 +59,10 @@ public class BatchConfig {
     public Step sendingToKafkaStep(
             JobRepository jobRepository,
             PlatformTransactionManager transactionManager,
-            SendingToKafkaTasklet sendingToKafkaTasklet
+            SendingToKafkaTasklet tasklet
     ) {
         return new StepBuilder("sendingToKafkaStep", jobRepository)
-                .tasklet(sendingToKafkaTasklet, transactionManager)
+                .tasklet(tasklet, transactionManager)
                 .build();
     }
 

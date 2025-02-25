@@ -1,6 +1,8 @@
 spring:
+
   application:
     name: content-service
+
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
@@ -12,7 +14,32 @@ spring:
         reconnect.backoff.ms: 1000
         reconnect.backoff.max.ms: 50000
       group-id: event-consumer-group
+#      auto-offset-reset: earliest
     topic: event-topic
 
+  datasource:
+    #    url: jdbc:postgresql://postgres-service:15432/${POSTGRES_DB}
+    url: jdbc:postgresql://localhost:15432/${POSTGRES_DB}
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+    hibernate:
+      ddl-auto: create
+
 server:
-  port: 8180
+  port: 18080
+
+#logging:
+#  level:
+#    root: debug
+
+image:
+#  path: /event-image
+  path: /Users/styner/0main/event-image
+  file-name: _image
