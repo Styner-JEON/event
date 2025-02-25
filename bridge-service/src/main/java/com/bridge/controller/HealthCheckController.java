@@ -16,6 +16,10 @@ import java.time.format.DateTimeFormatter;
 @RestController
 public class HealthCheckController {
 
+    /**
+     * 헬스체킹
+     * @return
+     */
     @GetMapping(value = "/healthcheck", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<HealthStatus> healthcheck() {
         ZonedDateTime zonedDateTime = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
@@ -28,8 +32,11 @@ public class HealthCheckController {
     @Setter
     @Getter
     public static class HealthStatus {
+
         private String status;
+
         private String koreanDateTime;
+
     }
 
 }

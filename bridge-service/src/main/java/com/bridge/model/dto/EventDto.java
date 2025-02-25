@@ -20,39 +20,24 @@ public class EventDto implements Serializable {
     private static final long serialVersionUID = 1L;  // 🚀 직렬화 ID 추가
 
     // 지역기반관광정보조회
-    @JsonProperty("contentid")
     private Long contentId;
 
     private String title;
 
-    @JsonProperty("createdtime")
-    @JsonFormat(pattern = "yyyyMMddHHmmss")
     private LocalDateTime createdTime;
-
-    @JsonProperty("modifiedtime")
-    @JsonFormat(pattern = "yyyyMMddHHmmss")
     private LocalDateTime modifiedTime;
 
     private String addr1;
-
     private String addr2;
 
-    @JsonProperty("areacode")
-    private Integer areaCode;
+    private String area;
 
-    @JsonProperty("firstimage")
     private String firstImage;
-
-    @JsonProperty("firstimage2")
     private String firstImage2;
 
-    @JsonProperty("mapx")
     private Double mapX;
-
-    @JsonProperty("mapy")
     private Double mapY;
 
-    @JsonProperty("zipcode")
     private String zipCode;
 
     // 공통정보조회
@@ -61,26 +46,45 @@ public class EventDto implements Serializable {
     private String overview;
 
     // 소개정보조회
-    @JsonProperty("eventstartdate")
     private LocalDate eventStartDate;
-
-    @JsonProperty("eventenddate")
     private LocalDate eventEndDate;
 
-    @JsonProperty("playtime")
     private String playTime;
 
-    @JsonProperty("usetimefestival")
     private String useTimeFestival;
 
     private String sponsor1;
-
-    @JsonProperty("sponsor1tel")
     private String sponsor1Tel;
 
     private String sponsor2;
-
-    @JsonProperty("sponsor2tel")
     private String sponsor2Tel;
+
+    @Override
+    public String toString() {
+        return "EventDto{" +
+                "contentId=" + contentId +
+                ", title='" + title + '\'' +
+                ", createdTime=" + createdTime +
+                ", modifiedTime=" + modifiedTime +
+                ", addr1='" + addr1 + '\'' +
+                ", addr2='" + addr2 + '\'' +
+                ", area='" + area + '\'' +
+                ", firstImage='" + firstImage + '\'' +
+                ", firstImage2='" + firstImage2 + '\'' +
+                ", mapX=" + mapX +
+                ", mapY=" + mapY +
+                ", zipCode='" + zipCode + '\'' +
+                ", homepage='" + homepage + '\'' +
+                ", overview='" + overview + '\'' +
+                ", eventStartDate=" + eventStartDate +
+                ", eventEndDate=" + eventEndDate +
+                ", playTime='" + playTime + '\'' +
+                ", useTimeFestival='" + useTimeFestival + '\'' +
+                ", sponsor1='" + sponsor1 + '\'' +
+                ", sponsor1Tel='" + sponsor1Tel + '\'' +
+                ", sponsor2='" + sponsor2 + '\'' +
+                ", sponsor2Tel='" + sponsor2Tel + '\'' +
+                '}';
+    }
 
 }

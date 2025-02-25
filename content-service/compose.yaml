@@ -1,0 +1,19 @@
+services:
+
+  content-postgres-service:
+    image: postgres:16
+    container_name: content-postgres-container
+    environment:
+      POSTGRES_USER: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "15432:5432"
+    networks:
+      - content_network
+    volumes:
+      - /Users/styner/0main/dockervolumes/content-service/postgresql/data:/var/lib/postgresql/data
+
+networks:
+  content_network:
+    driver: bridge

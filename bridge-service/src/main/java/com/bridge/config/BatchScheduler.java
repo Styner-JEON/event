@@ -1,12 +1,17 @@
 package com.bridge.config;
 
+import com.bridge.exception.BatchProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,10 +33,8 @@ public class BatchScheduler {
     /**
      * 매일 새벽 4시에 Event 데이터를 가져와 Kafka로 전송하는 Job을 실행함
      */
-    @Scheduled(cron = "0 * * * * ?")
-//        @Scheduled(cron = "0 0 4 * * ?")
+    @Scheduled(cron = "0 0 4 * * ?")
     public void scheduleEventFetchingAndSendingJob() {
-        try {
             ZonedDateTime nowKST = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
             String formattedTime = nowKST.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
@@ -39,9 +42,14 @@ public class BatchScheduler {
                     .addString("koreanTime", formattedTime)
                     .toJobParameters();
 
+        try {
             jobLauncher.run(eventFetchingAndSendingJob, jobParameters);
-        } catch (Exception e) {
-            log.error("Failed to run eventFetchingAndSendingJob", e);
+        } catch (JobExecutionAlreadyRunningException |
+                 JobRestartException |
+                 JobInstanceAlreadyCompleteException |
+                 JobParametersInvalidException e
+        ) {
+            throw new BatchProcessingException("Batch job execution failed: " + e.getMessage());
         }
     }
 

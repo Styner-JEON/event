@@ -1,23 +1,22 @@
-package com.content.model.dto;
+package com.content.model.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.Column;
+import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@NoArgsConstructor
+@Entity
+@Table(name = "event_table")
 @Setter
 @Getter
-public class EventDto {
+public class EventEntity {
 
-    // 지역기반관광정보조회
+    @Id
     private Long contentId;
 
     private String title;
@@ -38,12 +37,12 @@ public class EventDto {
 
     private String zipCode;
 
-    // 공통정보조회
+    @Column(columnDefinition = "TEXT")
     private String homepage;
 
+    @Column(columnDefinition = "TEXT")
     private String overview;
 
-    // 소개정보조회
     private LocalDate eventStartDate;
     private LocalDate eventEndDate;
 
@@ -57,10 +56,6 @@ public class EventDto {
     private String sponsor2;
     private String sponsor2Tel;
 
-    // content-service에서만 추가
     private LocalDateTime dbUpdatedAt;
-
-    // dto에서만 추가
-    private String imagePath;
 
 }

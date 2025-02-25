@@ -1,40 +1,47 @@
 services:
 
-  zookeeper-service:
+  bridge-zookeeper-service:
     image: confluentinc/cp-zookeeper:latest
-    container_name: zookeeper-container
+    container_name: bridge-zookeeper-container
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
     networks:
       - bridge_network
+    volumes:
+      - /Users/styner/0main/dockervolumes/bridge-service/zookeeper/data:/data
+      - /Users/styner/0main/dockervolumes/bridge-service/zookeeper/datalog:/datalog
 
-  kafka-service:
+  bridge-kafka-service:
     image: confluentinc/cp-kafka:latest
-    container_name: kafka-container
+    container_name: bridge-kafka-container
     ports:
       - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper-service:2181
-#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-service:9092
+      KAFKA_ZOOKEEPER_CONNECT: bridge-zookeeper-service:2181
+      #      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-service:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
-      - zookeeper-service
+      - bridge-zookeeper-service
     networks:
       - bridge_network
+    volumes:
+      - /Users/styner/0main/dockervolumes/bridge-service/kafka/data:/var/lib/kafka/data
 
-  postgres-service:
+  bridge-postgres-service:
     image: postgres:16
-    container_name: postgres-container
+    container_name: bridge-postgres-container
     environment:
       POSTGRES_USER: ${POSTGRES_USERNAME}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "15432:5432"
+      - "25432:5432"
     networks:
       - bridge_network
+    volumes:
+      - /Users/styner/0main/dockervolumes/bridge-service/postgresql/data:/var/lib/postgresql/data
 
 networks:
   bridge_network:
