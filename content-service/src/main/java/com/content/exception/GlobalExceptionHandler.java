@@ -1,7 +1,6 @@
 package com.content.exception;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -15,9 +14,9 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ErrorCode.IMAGE_PROCESSING_ERROR, e, true);
     }
 
-    @ExceptionHandler(ContentServiceException.class)
-    public ResponseEntity<ErrorResponse> handleContentServiceException(ContentServiceException e) {
-        return buildErrorResponse(ErrorCode.CONTENT_SERVICE_ERROR, e, true);
+    @ExceptionHandler(EventException.class)
+    public ResponseEntity<ErrorResponse> handleEventException(EventException e) {
+        return buildErrorResponse(ErrorCode.EVENT_ERROR, e, true);
     }
 
     @ExceptionHandler(Exception.class)

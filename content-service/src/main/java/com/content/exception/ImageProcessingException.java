@@ -1,6 +1,6 @@
 package com.content.exception;
 
-public class ImageProcessingException extends ContentServiceException {
+public class ImageProcessingException extends EventException {
 
     public ImageProcessingException(String message) {
         super(message);

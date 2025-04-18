@@ -1,8 +1,8 @@
 package com.auth.security;
 
+import com.auth.config.JwtProperties;
 import com.auth.exception.CustomJwtException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import io.jsonwebtoken.*;
 
@@ -22,33 +22,31 @@ public class JwtUtil {
 
     private final long refreshTokenExpiry;
 
-    public JwtUtil(
-            @Value("${jwt.secret-string}") String secretString,
-            @Value("${jwt.access-token-expiry}") long accessTokenExpiry,
-            @Value("${jwt.refresh-token-expiry}") long refreshTokenExpiry
-    ) {
-        this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(secretString));
-        this.accessTokenExpiry = accessTokenExpiry;
-        this.refreshTokenExpiry = refreshTokenExpiry;
+    public JwtUtil(JwtProperties jwtProperties) {
+        this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(jwtProperties.getSecretString()));
+        this.accessTokenExpiry = jwtProperties.getAccessTokenExpiry();
+        this.refreshTokenExpiry = jwtProperties.getRefreshTokenExpiry();
     }
 
-    private String createJwt(Long userId, long expirationTime) {
+    private String createJwt(Long userId, String username, String userRole, long expirationTime) {
         long now = System.currentTimeMillis();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .expiration(new Date(now + expirationTime))
                 .issuedAt(new Date(now))
+                .claim("username", username)
+                .claim("userRole", userRole)
                 .signWith(secretKey, Jwts.SIG.HS256)
                 .compact()
                 ;
     }
 
-    public String createAccessToken(Long userId) {
-        return createJwt(userId, accessTokenExpiry);
+    public String createAccessToken(Long userId, String username, String userRole) {
+        return createJwt(userId, username, userRole, accessTokenExpiry);
     }
 
-    public String createRefreshToken(Long userId) {
-        return createJwt(userId, refreshTokenExpiry);
+    public String createRefreshToken(Long userId, String username, String userRole) {
+        return createJwt(userId, username, userRole, refreshTokenExpiry);
     }
 
     public Jws<Claims> readJwt(String token) {

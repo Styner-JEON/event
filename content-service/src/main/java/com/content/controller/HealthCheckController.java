@@ -1,6 +1,5 @@
 package com.content.controller;
 
-import com.content.exception.ContentServiceException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,9 +14,10 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 @RestController
+@RequestMapping(path = "/events/${api.version}", produces = MediaType.APPLICATION_JSON_VALUE)
 public class HealthCheckController {
 
-    @GetMapping(value = "/healthcheck", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = "/healthcheck")
     public ResponseEntity<HealthStatus> healthcheck() {
         ZonedDateTime zonedDateTime = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
         String koreanDateTime = zonedDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z"));

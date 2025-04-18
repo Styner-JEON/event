@@ -1,5 +1,6 @@
 package com.auth.security;
 
+import com.auth.exception.AuthException;
 import com.auth.exception.ErrorCode;
 import com.auth.exception.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,9 +16,11 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ObjectMapper objectMapper;
@@ -28,14 +31,20 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
             HttpServletResponse response,
             AuthenticationException authException
     ) throws IOException, ServletException {
+        log.warn("Authentication failed: {}", authException.getMessage());
+
         ErrorResponse errorResponse = new ErrorResponse(
                 ErrorCode.AUTH_ERROR,
-                "Authentication failed: " + authException.getMessage()
+                "Authentication required"
         );
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setStatus(ErrorCode.AUTH_ERROR.getErrorStatus().value());
 
-        objectMapper.writeValue(response.getWriter(), errorResponse);
-        response.getWriter().flush();
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+
+        PrintWriter writer = response.getWriter();
+        writer.write(objectMapper.writeValueAsString(errorResponse));
+        writer.flush();
     }
+
 }

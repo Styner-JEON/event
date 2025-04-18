@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -20,6 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -45,7 +47,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = getToken(httpHeader);
         Jws<Claims> jws = jwtUtil.readJwt(token);
-
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = getUsernamePasswordAuthenticationToken(request, jws);
         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
         filterChain.doFilter(request, response);
@@ -62,15 +63,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private UsernamePasswordAuthenticationToken getUsernamePasswordAuthenticationToken(HttpServletRequest request, Jws<Claims> jws) {
         Claims claims = jws.getPayload();
         Long userId = Long.valueOf(claims.getSubject());
-
-        CustomUserDetails customUserDetails = (CustomUserDetails) customUserDetailsService.loadUserByUserId(userId);
-        String username = customUserDetails.getUsername();
+        String username = claims.get("username", String.class);
+        String userRole = claims.get("userRole", String.class);
 
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
                 new UsernamePasswordAuthenticationToken(
                         new CustomPrincipal(userId, username),
                         null,
-                        customUserDetails.getAuthorities()
+                        List.of(new SimpleGrantedAuthority(userRole))
                 );
         usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         return usernamePasswordAuthenticationToken;

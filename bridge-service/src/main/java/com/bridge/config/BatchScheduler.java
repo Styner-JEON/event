@@ -33,7 +33,8 @@ public class BatchScheduler {
     /**
      * 매일 새벽 4시에 Event 데이터를 가져와 Kafka로 전송하는 Job을 실행함
      */
-    @Scheduled(cron = "0 0 4 * * ?")
+    @Scheduled(cron = "0 24 * * * ?")
+//    @Scheduled(cron = "0 0 4 * * ?")
     public void scheduleEventFetchingAndSendingJob() {
             ZonedDateTime nowKST = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
             String formattedTime = nowKST.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));

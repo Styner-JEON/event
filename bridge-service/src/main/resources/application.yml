@@ -45,6 +45,9 @@ spring:
 server:
   port: 28080
 
+api:
+  version: v1
+
 public-data-api:
   base-url: "http://apis.data.go.kr/B551011/KorService1"
   endpoints:

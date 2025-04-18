@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(RegistrationException.class)
-    public ResponseEntity<ErrorResponse> handleRegistrationException(RegistrationException e) {
-        return buildErrorResponse(ErrorCode.Registration_ERROR, e, true);
+    @ExceptionHandler(SignupException.class)
+    public ResponseEntity<ErrorResponse> handleSignupException(SignupException e) {
+        return buildErrorResponse(ErrorCode.SIGNUP_ERROR, e, true);
     }
 
     @ExceptionHandler(CustomJwtException.class)

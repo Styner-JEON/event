@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      routes:
+        - id: content-service
+        - uri: http://localhost:18080
+        - predicates:
+          - Path=/content/**
+        - id: auth-service
+          uri: http://localhost:38080
+          predicates:
+            - Path=/auth/**
+      metrics:
+        enabled: true
+        tags:
+          path:
+            enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: info, health, metrics, gateway
+
+
+server:
+  port: 58080
+
+api:
+  version: v1

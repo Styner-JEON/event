@@ -1,23 +1,21 @@
 package com.auth.service;
 
 import com.auth.exception.CustomLoginException;
-import com.auth.exception.ErrorCode;
-import com.auth.exception.ErrorResponse;
-import com.auth.exception.RegistrationException;
+import com.auth.exception.SignupException;
 import com.auth.model.entity.UserEntity;
 import com.auth.model.request.LoginRequest;
-import com.auth.model.request.RegisterRequest;
+import com.auth.model.request.SignupRequest;
+import com.auth.model.response.LoginResponse;
+import com.auth.model.response.SignupResponse;
+import com.auth.model.response.UserResponse;
+import com.auth.model.role.UserRole;
 import com.auth.repository.UserRepository;
 import com.auth.security.CustomUserDetails;
 import com.auth.security.JwtUtil;
-import jakarta.servlet.http.Cookie;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -39,7 +37,26 @@ public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
 
-    public String[] login(HttpServletResponse response, LoginRequest loginRequest) {
+    @Transactional
+    public SignupResponse signup(SignupRequest request) {
+        if (userRepository.existsByUsername(request.username())) {
+            throw new SignupException("Username already exists");
+        }
+
+        if (userRepository.existsByEmail(request.email())) {
+            throw new SignupException("Email already exists");
+        }
+
+        String encodedPassword = passwordEncoder.encode(request.password());
+        String username = request.username();
+        String email = request.email();
+        UserRole userRole = UserRole.ROLE_USER;
+        UserEntity userEntity = new UserEntity(username, encodedPassword, email, userRole);
+        userRepository.save(userEntity);
+        return new SignupResponse(username, email);
+    }
+
+    public LoginResponse login(HttpServletResponse response, LoginRequest loginRequest) {
         String username = loginRequest.username();
         String password = loginRequest.password();
         Authentication authentication = UsernamePasswordAuthenticationToken.unauthenticated(username, password);
@@ -51,25 +68,11 @@ public class AuthService {
         }
         CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
         Long userId = customUserDetails.getUserEntity().getUserId();
+        String userRole = customUserDetails.getUserEntity().getUserRole().name();
 
-        String accessToken = jwtUtil.createAccessToken(userId);
-        String refreshToken = jwtUtil.createRefreshToken(userId);
-        return new String[]{accessToken, refreshToken};
-    }
-
-    @Transactional
-    public void register(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.username())) {
-            throw new RegistrationException("Username already exists");
-        }
-
-        if (userRepository.existsByEmail(request.email())) {
-            throw new RegistrationException("Email already exists");
-        }
-
-        String encodedPassword = passwordEncoder.encode(request.password());
-        UserEntity userEntity = new UserEntity(request.username(), encodedPassword, request.email());
-        userRepository.save(userEntity);
+        String accessToken = jwtUtil.createAccessToken(userId, username, userRole);
+        String refreshToken = jwtUtil.createRefreshToken(userId, username, userRole);
+        return new LoginResponse(accessToken, refreshToken, new UserResponse(userId, username, userRole));
     }
 
 }
