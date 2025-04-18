@@ -145,7 +145,8 @@ public class PublicDataApiClient {
 
     private URI buildAreaBasedListUri(int pageNo) {
         String yesterday = LocalDate.now(ZoneId.of("Asia/Seoul"))
-                    .minusDays(1)  // 하루 전 데이터를 페칭할 것
+//                    .minusDays(1)  // 하루 전 데이터를 페칭할 것
+                    .minusDays(5)
                     .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         URI uri = UriComponentsBuilder.fromUriString(baseUrl + areaBasedListEndpoint)  // 지역기반관광정보조회

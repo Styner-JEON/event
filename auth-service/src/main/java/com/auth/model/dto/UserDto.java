@@ -10,7 +10,7 @@ import java.util.UUID;
 @Getter
 public class UserDto {
 
-    private UUID userId;
+    private long userId;
 
     private String username;
 

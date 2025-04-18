@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum ErrorCode {
 
-    Registration_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
+    SIGNUP_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
 
     JWT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
 

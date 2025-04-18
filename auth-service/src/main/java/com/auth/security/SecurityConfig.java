@@ -35,6 +35,8 @@ import org.springframework.security.web.server.authentication.RedirectServerAuth
 
 import java.io.IOException;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 
 @Configuration
 @EnableWebSecurity
@@ -52,25 +54,23 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests((authorize) -> authorize
-                    .requestMatchers(
-                            "/auth/" + apiVersion + "/login",
-                            "/auth/" + apiVersion + "/register"
-                    ).permitAll()
-                    .anyRequest().authenticated()
+                .requestMatchers(
+                        "/auth/" + apiVersion + "/login",
+                        "/auth/" + apiVersion + "/signup"
+                ).permitAll()
+                .anyRequest().authenticated()
             )
             .sessionManagement((session) -> session
-                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
+            .cors(withDefaults())
             .csrf((csrf) -> csrf.disable())
-//            .cors(Customizer.withDefaults())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-
             .exceptionHandling(exceptionHandling ->
-                    exceptionHandling.authenticationEntryPoint(customAuthenticationEntryPoint)
+                exceptionHandling.authenticationEntryPoint(customAuthenticationEntryPoint)
             )
             ;
         return http.build();
     }
-
 
 }

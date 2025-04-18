@@ -1,22 +1,17 @@
 package com.auth.controller;
 
-import com.auth.exception.ErrorCode;
-import com.auth.exception.ErrorResponse;
+import com.auth.exception.CustomJwtException;
 import com.auth.model.request.LoginRequest;
-import com.auth.model.request.RegisterRequest;
-import com.auth.security.CustomUserDetails;
-import com.auth.security.JwtUtil;
+import com.auth.model.request.SignupRequest;
+import com.auth.model.response.LoginResponse;
+import com.auth.model.response.SignupResponse;
 import com.auth.service.AuthService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -27,39 +22,44 @@ import java.util.Map;
 @Slf4j
 public class AuthController {
 
+    @Value("${jwt.access-token-expiry}")
+    private long accessTokenExpiry;
+
     @Value("${jwt.refresh-token-expiry}")
     private long refreshTokenExpiry;
 
     private final AuthService authService;
 
     @GetMapping("/hello")
-    public ResponseEntity<String> hello() {
+    public ResponseEntity<String> hello(Authentication authentication) {
         return ResponseEntity.ok("Hello, world!");
     }
 
+    @PostMapping("/signup")
+    public ResponseEntity<SignupResponse> signup(@RequestBody SignupRequest request) {
+        SignupResponse signupResponse = authService.signup(request);
+        log.info("User signed up: {}", request.username());
+        return ResponseEntity.ok(signupResponse);
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(HttpServletResponse response, @RequestBody LoginRequest loginRequest) {
-        String[] tokens = authService.login(response, loginRequest);
-        String accessToken = tokens[0];
-        String refreshToken = tokens[1];
-        response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(refreshToken).toString());
-        return ResponseEntity.ok(Map.of("accessToken", accessToken));
+    public ResponseEntity<LoginResponse> login(HttpServletResponse response, @RequestBody LoginRequest loginRequest) {
+        LoginResponse loginResponse = authService.login(response, loginRequest);
+//        addTokenToCookie(response, "accessToken", tokenDto.getAccessToken(), accessTokenExpiry);
+//        addTokenToCookie(response, "refreshToken", tokenDto.getRefreshToken(), refreshTokenExpiry);
+        log.info("Login successful: {}", loginRequest.username());
+        return ResponseEntity.ok(loginResponse);
     }
 
-    private ResponseCookie createRefreshTokenCookie(String refreshToken) {
-        return ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-//            .secure(true)
-                .path("/")
-                .maxAge(refreshTokenExpiry / 1000)
-                .sameSite("Strict")
-                .build();
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
-        authService.register(request);
-        return ResponseEntity.ok("user " + request.username() + " registered");
-    }
+//    private void addTokenToCookie(HttpServletResponse response, String tokenType, String tokenValue, long tokenExpiry) {
+//        ResponseCookie cookie = ResponseCookie.from(tokenType, tokenValue)
+//                .httpOnly(true)
+//                .path("/auth/refresh")
+//                .maxAge(tokenExpiry / 1000)
+//                .secure(false)
+//                .sameSite("Lax")
+//                .build();
+//        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+//    }
 
 }

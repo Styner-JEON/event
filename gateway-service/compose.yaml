@@ -1,0 +1,15 @@
+services:
+  gateway-redis-service:
+    image: 'redis:latest'
+    container_name: gateway-redis-container
+    ports:
+      - '56379:6379'
+    networks:
+      - gateway_network
+    volumes:
+      - /Users/styner/0main/dockervolumes/gateway-service/redis:/data
+    restart: always
+
+networks:
+  gateway_network:
+    driver: bridge

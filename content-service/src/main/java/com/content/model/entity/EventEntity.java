@@ -48,6 +48,7 @@ public class EventEntity {
 
     private String playTime;
 
+    @Column(columnDefinition = "TEXT")
     private String useTimeFestival;
 
     private String sponsor1;
