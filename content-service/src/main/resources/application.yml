@@ -37,6 +37,11 @@ server:
 api:
   version: v1
 
+comment-url:
+  insert: /events/v1/*/comments
+  update: /events/v1/comments/*
+  delete: /events/v1/comments/*
+
 #logging:
 #  level:
 #    root: debug
@@ -45,3 +50,7 @@ image:
 #  path: /event-image
   path: /Users/styner/0main/event-image
   file-name: _image
+
+jwt:
+  # AHomeRunAHomeRunAHomeRunAHomeRun를 base64로 인코딩한 값
+  secret-string: ${SECRET_STRING}

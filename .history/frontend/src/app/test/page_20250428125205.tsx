@@ -1,0 +1,25 @@
+
+export default function TestPage() {  
+  return (    
+    <div className="flex flex-col h-screen">      
+      <header className="bg-blue-300 basis-1/20">
+        header
+      </header>      
+      {/* <div className="flex-1 flex flex-row">         */}
+        <aside className="bg-green-300 basis-1/5">
+          left**
+        </aside>
+        <main className="bg-red-300 basis-3/5">
+          main**
+        </main>
+        <aside className="bg-purple-300 basis-1/5">
+          right*
+        </aside>
+      </div>
+      <footer className="bg-yellow-300 basis-1/20">
+        footer
+      </footer>
+    </div>
+  )
+}
+
