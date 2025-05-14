@@ -1,0 +1,34 @@
+import Link from "next/link";
+import Cookies from "../_components/cookies";
+
+
+export default function Home() {  
+
+  // if (isError) return <div>Error loading events. Please try again later.</div>
+  // if (isLoading) return <div>loading...</div>
+
+  const eventCards = events.map((event: Event) => (
+    <li key={event.contentId}>
+      <EventCard event={event} />
+    </li>
+  ));
+
+  return (
+    <main>
+      <h1>home page</h1>
+      <section> 
+        <p>
+          <button>
+            <Link href="/login">Login button</Link>
+          </button>
+        </p>
+        <p>
+          <button>
+            <Link href="/signup">Signup button</Link>
+          </button>
+        </p>         
+        {/* <Cookies /> */}
+      </section>      
+    </main>
+  );
+}

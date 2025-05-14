@@ -1,0 +1,23 @@
+
+export default function TestPage() {
+  return (
+    <>
+      <header>
+        헤더
+      </header>
+      <aside>
+        left
+      </aside>
+      <main>
+        
+        
+      </main>
+      <aside>
+        right
+      </aside>
+      <footer>
+        footer
+      </footer>
+    </>
+  )
+}

@@ -3,6 +3,7 @@ package com.content.service;
 import com.content.exception.EventException;
 import com.content.mapper.EventMapper;
 import com.content.model.dto.EventDto;
+import com.content.model.dto.EventListDto;
 import com.content.model.entity.EventEntity;
 import com.content.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,14 +30,14 @@ public class EventService {
     public void insertEvent(EventDto eventDto) {
         EventEntity eventEntity = eventMapper.toEventEntity(eventDto);
         eventEntity.setDbUpdatedAt(LocalDateTime.now());
-        imageService.processImages(eventDto);
+//        imageService.processImages(eventDto);
         eventRepository.save(eventEntity);
         log.info("DB insert completed for contentId: {}", eventDto.getContentId());
     }
 
     @Transactional(readOnly = true)
-    public Page<EventDto> selectEventList(Pageable pageable) {
-        Page<EventDto> EventListPage = eventRepository.findAll(pageable).map(eventMapper::toEventDto);
+    public Page<EventListDto> selectEventList(Pageable pageable) {
+        Page<EventListDto> EventListPage = eventRepository.findAll(pageable).map(eventMapper::toEventListDto);
         return EventListPage;
     }
 

@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
@@ -53,18 +54,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .csrf((csrf) -> csrf.disable())
             .authorizeHttpRequests((authorize) -> authorize
-                .requestMatchers(
-                        "/auth/" + apiVersion + "/login",
-                        "/auth/" + apiVersion + "/signup"
-                ).permitAll()
-                .anyRequest().authenticated()
+                    .requestMatchers(HttpMethod.POST, "/auth/" + apiVersion + "/login").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/auth/" + apiVersion + "/signup").permitAll()
+                    .anyRequest().authenticated()
             )
             .sessionManagement((session) -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .cors(withDefaults())
-            .csrf((csrf) -> csrf.disable())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .exceptionHandling(exceptionHandling ->
                 exceptionHandling.authenticationEntryPoint(customAuthenticationEntryPoint)
